@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Feedback Form</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        h2 {
+            text-align: center;
+        }
+        form {
+            max-width: 500px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            padding-right: 40px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            background: #28a745;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        button:hover {
+            background: #218838;
+        }
+        #feedbackList {
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 10px;
+            background: white;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .feedback-item {
+            border-bottom: 1px solid #ddd;
+            padding: 10px 0;
+        }
+        .feedback-item:last-child {
+            border-bottom: none;
+        }
+        .feedback-item strong {
+            color: #333;
+        }
+        .feedback-item em {
+            color: #777;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <h2>We Value Your Feedback</h2>
+    <form id="feedbackForm" method="POST" enctype="application/x-www-form-urlencoded">
+        <input type="text" name="name" placeholder="Your Full Name" required>
+        <input type="email" name="email" placeholder="Your Email Address" required>
+        <textarea name="message" placeholder="Please provide your feedback here..." required></textarea>
+        <button type="submit">Submit Feedback</button>
+    </form>
+
+    <div class="feedback-message" id="feedbackMessage"></div>
+
+    <h2>Recent Feedback</h2>
+    <div id="feedbackList"></div>
+
+    <script>
+        document.getElementById('feedbackForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            let formData = new FormData(this);
+            let message = formData.get('message');
+
+            // Prevent inappropriate content
+            const prohibitedWords = ['badword1', 'badword2', 'offensiveword']; // Add prohibited words here
+            let containsProhibitedWords = prohibitedWords.some(word => message.toLowerCase().includes(word));
+
+            if (containsProhibitedWords) {
+                document.getElementById('feedbackMessage').innerText = 'Please refrain from using inappropriate language in your feedback.';
+                document.getElementById('feedbackMessage').style.color = 'red';
+                return;
+            }
+
+            fetch('http://localhost/FEEDBACK/submit_feedback.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message);
+                if (data.success) {
+                    this.reset();
+                    loadFeedbacks(); // Refresh feedback list after submitting new feedback
+                    document.getElementById('feedbackMessage').innerText = '';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('feedbackMessage').innerText = 'There was an error submitting your feedback. Please try again later.';
+                document.getElementById('feedbackMessage').style.color = 'red';
+            });
+        });
+
+        function loadFeedbacks() {
+            fetch('fetch_feedback.php')
+                .then(response => response.json())
+                .then(data => {
+                    let feedbackHTML = '';
+                    data.forEach(feedback => {
+                        // Removed the delete button
+                        feedbackHTML += `
+                            <div class="feedback-item">
+                                <strong>${feedback.name}:</strong> ${feedback.message} <em>(${feedback.created_at})</em>
+                            </div>
+                        `;
+                    });
+                    document.getElementById('feedbackList').innerHTML = feedbackHTML;
+                })
+                .catch(error => console.error('Error loading feedback:', error));
+        }
+
+        window.onload = loadFeedbacks;
+    </script>
+</body>
+</html>
